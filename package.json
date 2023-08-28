@@ -30,11 +30,13 @@
 		"tslib": "^2.4.1",
 		"typescript": "^5.0.0",
 		"vite": "^4.4.2",
+		"vite-plugin-static-copy": "^0.17.0",
 		"vitest": "^0.32.2"
 	},
 	"type": "module",
 	"dependencies": {
 		"ag-grid-community": "^30.1.0",
-		"ag-grid-enterprise": "^30.1.0"
+		"ag-grid-enterprise": "^30.1.0",
+		"pyodide": "^0.23.4"
 	}
 }
