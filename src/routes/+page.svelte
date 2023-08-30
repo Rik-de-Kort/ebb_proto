@@ -2,6 +2,7 @@
     import {onMount} from "svelte";
     import {loadPyodide} from "pyodide";
     import AgGrid from "$lib/AgGrid.svelte";
+    import CodeMirror from "svelte-codemirror-editor";
 
     let data = [
         {a: 0, b: 1, c: 2},
@@ -17,10 +18,36 @@
     onMount(async () => {
         pyodide = await loadPyodide({indexURL: "/pyodide-data"});
         console.log('pyodide loaded!')
-        pyodide.runPython
     })
 
     $: console.log(data);
+
+    let value = "hello, world\na\na\na\na\na\na\na\na\na\na\na\na\na\na";
 </script>
 
-<AgGrid bind:data={data} {columnDefs}/>
+<div id="container">
+    <div id="grid">
+        <AgGrid bind:data={data} {columnDefs}/>
+    </div>
+    <div id="editor">
+        <CodeMirror bind:value/>
+    </div>
+</div>
+
+<style>
+    #container {
+        margin-left: auto;
+        margin-right: auto;
+        display: flex;
+        flex-direction: row;
+        border: 1px solid black;
+        width: 70%;
+    }
+
+    #editor{
+        display: block;
+        flex-grow: 1;
+        width: 500px;
+        border: 1px solid black;
+    }
+</style>

@@ -25,5 +25,8 @@ export default defineConfig({
     },
     test: {
         include: ['src/**/*.{test,spec}.{js,ts}']
-    }
+    },
+    optimizeDeps: {
+        exclude: ["codemirror", "@codemirror/language-javascript" /* ... */],
+    },
 });
