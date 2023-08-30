@@ -3,16 +3,53 @@
     import {loadPyodide} from "pyodide";
     import AgGrid from "$lib/AgGrid.svelte";
     import CodeMirror from "svelte-codemirror-editor";
+    import {python} from "@codemirror/lang-python";
+
+    function asData(variables: string[], values: any[][]) {
+        let result = [];
+        for (const [i, variable] of variables.entries()) {
+            for (const [j, value] of values[i].entries()) {
+                if (result.length > j) {
+                    result[j][variable] = value;
+                } else {
+                    result.push({[variable]: value})
+                }
+            }
+        }
+        return result;
+    }
+
+    function asVarsAndVals(data: Record<string, any>[]): [string[], any[][]] {
+        if (data.length === 0) return [[], []]
+        let [first, ...rest] = data
+
+        const variables = [...Object.keys(first)];
+        let values = [...Object.values(first).map((v) => [v])];
+        for (const record of rest) {
+            for (const [i, variable] of variables.entries()) {
+                values[i].push(record[variable]);
+            }
+        }
+        return [variables, values];
+    }
+
+    function asCode(variables: string[], values: any[][]): string {
+        let result = [];
+        for (const [i, variable] of variables.entries()) {
+            result.push(`${variable} = ${values[i][0]}`)
+        }
+        return result.join('\n');
+    }
+
 
     let data = [
-        {a: 0, b: 1, c: 2},
-        {a: 2, b: 3, c: 4},
+        {first: 0, second: 1, third: 2},
+        {first: 2, second: 3, third: 4},
     ];
-    let columnDefs = [
-        {headerName: "First", field: "a", sortable: true, editable: true},
-        {headerName: "Second", field: "b", sortable: true, editable: true},
-        {headerName: "Third", field: "c", sortable: true, editable: true},
-    ];
+
+    $: [variables, values] = asVarsAndVals(data);
+    $: columnDefs = [...variables.map((name) => ({headerName: name, field: name, sortable: true, editable: true}))];
+    $: code = asCode(variables, values);
 
     let pyodide;
     onMount(async () => {
@@ -20,9 +57,16 @@
         console.log('pyodide loaded!')
     })
 
-    $: console.log(data);
-
-    let value = "hello, world\na\na\na\na\na\na\na\na\na\na\na\na\na\na";
+    let counter  = 0;
+    $: {
+        console.log(counter);
+        counter = counter + 1;
+        console.log(variables, values);
+        if (pyodide) {
+            pyodide.runPython(code);
+        }
+        console.log(data);
+    }
 </script>
 
 <div id="container">
@@ -30,7 +74,7 @@
         <AgGrid bind:data={data} {columnDefs}/>
     </div>
     <div id="editor">
-        <CodeMirror bind:value/>
+        <CodeMirror bind:value={code} lang={python()}/>
     </div>
 </div>
 
