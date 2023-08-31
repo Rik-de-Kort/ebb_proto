@@ -9,36 +9,44 @@
 
     $: console.log({editing, rowSelected, colSelected, valueSelected});
 
+    function setSelection(i, j) {
+        rowSelected = i;
+        colSelected = j;
+        valueSelected = values[rowSelected][colSelected];
+    }
+
     function go(direction: "up" | "down" | "left" | "right") {
         console.log('going...', direction, rowSelected, colSelected);
         if (direction === "up") {
-            rowSelected = rowSelected >= 0 ? rowSelected - 1 : -1;
+            rowSelected = rowSelected > 0 ? rowSelected - 1 : 0;
         } else if (direction === "down") {
             rowSelected = rowSelected + 1;
         } else if (direction === 'left') {
-            colSelected = colSelected >= 0 ? colSelected - 1 : -1;
+            colSelected = colSelected > 0 ? colSelected - 1 : 0;
         } else if (direction === 'right') {
-            rowSelected = rowSelected + 1;
+            colSelected = colSelected + 1;
         }
-        valueSelected = (rowSelected >= 0 && colSelected >= 0) ? values[rowSelected][colSelected] : undefined;
+        valueSelected = values[rowSelected][colSelected];  // Todo: use setSelection
     }
 
 
     function handleKeyInput(event: KeyboardEvent) {
         console.log(event);
-        if (event.target === editingInput && !['Escape', 'Tab'].includes(event.key)) return;
+        if (event.target === editingInput && !['Escape', 'Tab', 'Enter'].includes(event.key)) return;
 
         if (event.key === 'Escape' && editing) {
-            stopEditing();
-        } else if (event.key === 'Tab') {
-            if (editing) stopEditing();
-            colSelected = event.shiftKey ? go('left') : go('right');
+            updateValues();
+            editing = false;
+            editingInput.blur();
+        } else if (event.key === 'Tab' && editing) {
+            updateValues();
+            event.shiftKey ? go('left') : go('right');
             event.preventDefault();
         } else if (event.key === 'Enter' && !editing) {
             editingInput.focus();
         } else if (event.key === 'Enter' && editing) {
-            stopEditing();
-            rowSelected = event.shiftKey ? go('up') : go('down');
+            updateValues();
+            event.shiftKey ? go('up') : go('down');
         } else if (event.key === 'ArrowUp') {
             go('up');
         } else if (event.key === 'ArrowDown') {
@@ -52,10 +60,9 @@
         }
     }
 
-    function stopEditing() {
+    function updateValues() {
         values[rowSelected][colSelected] = valueSelected;
         values = values;
-        editing = false;
     }
 </script>
 
@@ -79,16 +86,21 @@
                                 type="text"
                                 on:keydown={(event) => {
                                     console.log('keyup input', event);
-                                    if (["Escape", "Tab"].includes(event.key)) event.preventDefault();
+                                    if (["Escape", "Tab", "Enter"].includes(event.key)) event.preventDefault();
                                 }}
                                 bind:this={editingInput}
                                 bind:value={valueSelected}
+                                autofocus={editing}
                                 on:focus={() => {editing = true;}}
-                                on:blur={stopEditing}
                         >
                     </td>
                 {:else}
-                    <td>
+                    <td on:click={(event) => {
+                                    console.log('click', event)
+                                    setSelection(i, j);
+                                    editing = true;
+                                }}
+                    >
                         {value}
                     </td>
                 {/if}
