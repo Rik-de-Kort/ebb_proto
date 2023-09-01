@@ -1,4 +1,6 @@
 <script lang="ts">
+    import CellInput from "$lib/CellInput.svelte";
+
     export let variables: string[] = ["first", "second", "third"];
     export let values: any[][] = [[0, 2, 4], [1, 3, 5]];
     $: [nRows, nCols] = [values.length, values[0].length];
@@ -12,7 +14,7 @@
 
     function setSelection(i, j) {
         if (j >= nCols) {
-            variables.push(...Array(j+1 - nCols).fill(''))
+            variables.push(...Array(j + 1 - nCols).fill(''))
             variables = variables;
 
             for (const [i, _] of values.entries()) {
@@ -27,13 +29,12 @@
 
         rowSelected = i;
         colSelected = j;
-        valueSelected = values[rowSelected][colSelected];
+        valueSelected = rowSelected >= 0 ? values[rowSelected][colSelected] : variables[j];
     }
 
     function go(direction: "up" | "down" | "left" | "right") {
-        console.log('going...', direction, rowSelected, colSelected);
         if (direction === "up") {
-            setSelection(rowSelected > 0 ? rowSelected - 1 : 0, colSelected);
+            setSelection(rowSelected > -1 ? rowSelected - 1 : -1, colSelected);
         } else if (direction === "down") {
             setSelection(rowSelected + 1, colSelected);
         } else if (direction === 'left') {
@@ -49,17 +50,17 @@
         if (event.target === editingInput && !['Escape', 'Tab', 'Enter'].includes(event.key)) return;
 
         if (event.key === 'Escape' && editing) {
-            editingInput.value = values[rowSelected][colSelected]; // reset value
+            resetData();
             editing = false;
             editingInput.blur();
         } else if (event.key === 'Tab' && editing) {
-            updateValues();
+            updateData();
             event.shiftKey ? go('left') : go('right');
             event.preventDefault();
         } else if (event.key === 'Enter' && !editing) {
             editingInput.focus();
         } else if (event.key === 'Enter' && editing) {
-            updateValues();
+            updateData();
             event.shiftKey ? go('up') : go('down');
         } else if (event.key === 'ArrowUp') {
             go('up');
@@ -70,13 +71,26 @@
         } else if (event.key === 'ArrowLeft') {
             go('left');
         } else {
-            console.log(event);
+            console.log('not handling')
         }
     }
 
-    function updateValues() {
-        values[rowSelected][colSelected] = valueSelected;
-        values = values;
+    function updateData() {
+        if (rowSelected >= 0) {
+            values[rowSelected][colSelected] = valueSelected;
+            values = values;
+        } else {
+            variables[colSelected] = valueSelected;
+            variables = variables;
+        }
+    }
+
+    function resetData() {
+        if (rowSelected >= 0) {
+            valueSelected = values[rowSelected][colSelected];
+        } else {
+            valueSelected = variables[colSelected];
+        }
     }
 </script>
 
@@ -85,8 +99,16 @@
 <table>
     <thead>
     <tr>
-        {#each variables as variable}
-            <th>{variable}</th>
+        {#each variables as variable, j}
+            {#if rowSelected === -1 && colSelected === j}
+                <th class="selected">
+                    <CellInput bind:valueSelected={valueSelected}
+                               bind:editing={editing}
+                               bind:htmlElement={editingInput}/>
+                </th>
+            {:else}
+                <th on:click={() => { setSelection(-1, j); editing = true; }}>{variable}</th>
+            {/if}
         {/each}
     </tr>
     </thead>
@@ -96,27 +118,12 @@
             {#each row as value, j}
                 {#if rowSelected === i && colSelected === j}
                     <td class="selected">
-                        <input
-                                type="text"
-                                on:keydown={(event) => {
-                                    console.log('keyup input', event);
-                                    if (["Escape", "Tab", "Enter"].includes(event.key)) event.preventDefault();
-                                }}
-                                bind:this={editingInput}
-                                bind:value={valueSelected}
-                                autofocus={editing}
-                                on:focus={() => {editing = true;}}
-                        >
+                        <CellInput bind:valueSelected={valueSelected}
+                                   bind:editing={editing}
+                                   bind:htmlElement={editingInput}/>
                     </td>
                 {:else}
-                    <td on:click={(event) => {
-                                    console.log('click', event)
-                                    setSelection(i, j);
-                                    editing = true;
-                                }}
-                    >
-                        {value}
-                    </td>
+                    <td on:click={() => { setSelection(i, j); editing = true; }}>{value}</td>
                 {/if}
             {/each}
         </tr>
@@ -133,7 +140,7 @@
         height: 2rem;
     }
 
-    td, th, td input {
+    td, th {
         padding: 0.1rem 0.5rem;
         width: 5rem;
         border: 1px solid #ccc;
@@ -143,20 +150,8 @@
         text-align: end;
     }
 
-    td.selected {
+    td.selected, th.selected {
         padding: 0;
         height: 2rem;
-    }
-
-
-    td input {
-        box-sizing: border-box;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        border: 1px solid black;
-
-        font: inherit;
-        text-align: inherit;
     }
 </style>
