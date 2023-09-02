@@ -1,8 +1,9 @@
 <script lang="ts">
     import CellInput from "$lib/CellInput.svelte";
 
-    export let variables: string[] = ["first", "second", "third"];
-    export let values: any[][] = [[0, 2, 4], [1, 3, 5]];
+    export let variables: string[] = ["first", "second", "third", "fourth"];
+    export let values: any[][] = [[0, 2, 4, 2], [1, 3, 5, 4]];
+    export let codes: Map<number, string> = new Map([[3, "first + second"]]);
     $: [nRows, nCols] = [values.length, values[0].length];
 
     let [rowSelected, colSelected] = [0, 1];
@@ -10,7 +11,7 @@
     let editing = false;
     let editingInput;
 
-    $: console.log({editing, rowSelected, colSelected, valueSelected, variables});
+    $: console.log({editing, rowSelected, colSelected, valueSelected, variables, codes});
 
     function setSelection(i, j) {
         if (j >= nCols) {
@@ -29,7 +30,13 @@
 
         rowSelected = i;
         colSelected = j;
-        valueSelected = rowSelected >= 0 ? values[rowSelected][colSelected] : variables[j];
+        if (rowSelected === -1) {
+            valueSelected = variables[j];
+        } else if (codes.has(colSelected)) {
+            valueSelected = codes.get(colSelected);
+        } else {
+            valueSelected = values[rowSelected][colSelected];
+        }
     }
 
     function go(direction: "up" | "down" | "left" | "right") {
@@ -76,12 +83,16 @@
     }
 
     function updateData() {
-        if (rowSelected >= 0) {
-            values[rowSelected][colSelected] = valueSelected;
-            values = values;
-        } else {
+        if (rowSelected === -1) {
             variables[colSelected] = valueSelected;
             variables = variables;
+        }
+        else if (codes.has(colSelected)) {
+            codes.set(colSelected, valueSelected);
+            codes =codes;
+        } else {
+            values[rowSelected][colSelected] = valueSelected;
+            values = values;
         }
     }
 
@@ -117,7 +128,7 @@
         <tr>
             {#each row as value, j}
                 {#if rowSelected === i && colSelected === j}
-                    <td class="selected">
+                    <td class="selected">  <!-- todo: handle blur properly -->
                         <CellInput bind:valueSelected={valueSelected}
                                    bind:editing={editing}
                                    bind:htmlElement={editingInput}/>
