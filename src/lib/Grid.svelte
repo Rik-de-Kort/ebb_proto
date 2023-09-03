@@ -30,13 +30,7 @@
 
         rowSelected = i;
         colSelected = j;
-        if (rowSelected === -1) {
-            valueSelected = variables[j];
-        } else if (codes.has(colSelected)) {
-            valueSelected = codes.get(colSelected);
-        } else {
-            valueSelected = values[rowSelected][colSelected];
-        }
+        resetData();
     }
 
     function go(direction: "up" | "down" | "left" | "right") {
@@ -83,24 +77,32 @@
     }
 
     function updateData() {
-        if (rowSelected === -1) {
+        if (rowSelected === -1) {  // Editing header
             variables[colSelected] = valueSelected;
             variables = variables;
-        }
-        else if (codes.has(colSelected)) {
-            codes.set(colSelected, valueSelected);
-            codes =codes;
-        } else {
+        } else if (/^=.*/.exec(valueSelected)) {  // Has to be a formula
+            codes.set(colSelected, valueSelected.slice(1).trim());
+            codes = codes;
+        } else if (codes.has(colSelected)) {  // Have a value, but used to be code
+            codes.delete(colSelected);
+            codes = codes;
+            for (const [i, _] of values.entries()) { // Overwirte everything
+                values[i][colSelected] = valueSelected;
+            }
+            values = values;
+        } else {  // Just updating a value...
             values[rowSelected][colSelected] = valueSelected;
             values = values;
         }
     }
 
     function resetData() {
-        if (rowSelected >= 0) {
-            valueSelected = values[rowSelected][colSelected];
-        } else {
+        if (rowSelected === -1) {
             valueSelected = variables[colSelected];
+        } else if (codes.has(colSelected)) {
+            valueSelected = '= ' + codes.get(colSelected);
+        } else {
+            valueSelected = values[rowSelected][colSelected];
         }
     }
 </script>
