@@ -1,28 +1,32 @@
 <script lang="ts">
     import {onMount} from "svelte";
     import {loadPyodide} from "pyodide";
+    import type {PyodideInterface} from "pyodide";
 
     import Grid from "$lib/Grid.svelte";
     import CodeMirror from "svelte-codemirror-editor";
     import {python} from "@codemirror/lang-python";
 
-    function asCode(variables: string[], values: any[][]): string {
+    function asCode(variables: string[], values: any[][], codes: Map<number, string>): string {
         let result = [];
         for (const [i, variable] of variables.entries()) {
-            if (variable) {
+            if (!variable) continue;
+            if (codes.has(i)) {
+                result.push(`${variable} = ${codes.get(i)}`);
+            } else {
                 result.push(`${variable} = ${values[0][i] !== '' ? values[0][i] : 'None'}`);
             }
         }
         return result.join('\n');
     }
 
+    let variables: string[] = ["first", "second", "third", "fourth"];
+    let values: any[][] = [[0, 2, 4, 2], [1, 3, 5, 4]];
+    let codes: Map<number, string> = new Map([[3, "first + second"]]);
 
-    let variables = ['first', 'second', 'third'];
-    let values = [[0, 2, 4], [1, 3, 5]];
+    $: code = asCode(variables, values, codes);
 
-    $: code = asCode(variables, values);
-
-    let pyodide;
+    let pyodide: PyodideInterface;
     onMount(async () => {
         pyodide = await loadPyodide({indexURL: "/pyodide-data"});
         console.log('pyodide loaded!')
@@ -32,7 +36,7 @@
     $: {
         console.log(counter);
         counter = counter + 1;
-        console.log(variables, values);
+        console.log({variables, values, codes});
         if (pyodide) {
             pyodide.runPython(code);
         }
@@ -41,7 +45,7 @@
 
 <div id="container">
     <div id="grid">
-        <Grid bind:variables bind:values/>
+        <Grid bind:variables bind:values bind:codes/>
     </div>
     <div id="editor">
         <CodeMirror bind:value={code} lang={python()}/>
