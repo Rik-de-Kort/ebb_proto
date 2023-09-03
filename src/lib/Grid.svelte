@@ -13,6 +13,14 @@
 
     $: console.log({editing, rowSelected, colSelected, valueSelected, variables, codes});
 
+    function maybeNumber(value: string): string | number {
+        if (!isNaN(Number(value)) && !isNaN(parseFloat(value))) {
+            return parseFloat(value)
+        } else {
+            return value;
+        }
+    }
+
     function storeSelected() {
         if (rowSelected === -1) {  // Editing header
             variables[colSelected] = valueSelected;
@@ -24,11 +32,11 @@
             codes.delete(colSelected);
             codes = codes;
             for (const [i, _] of values.entries()) { // Overwrite everything
-                values[i][colSelected] = valueSelected;
+                values[i][colSelected] = maybeNumber(valueSelected);
             }
             values = values;
         } else {  // Just updating a value...
-            values[rowSelected][colSelected] = valueSelected;
+            values[rowSelected][colSelected] = maybeNumber(valueSelected);
             values = values;
         }
     }
