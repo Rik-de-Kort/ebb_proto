@@ -9,74 +9,11 @@
     let [rowSelected, colSelected] = [0, 1];
     let valueSelected = values[rowSelected][colSelected];
     let editing = false;
-    let editingInput;
+    let editingInput: HTMLInputElement;
 
     $: console.log({editing, rowSelected, colSelected, valueSelected, variables, codes});
 
-    function setSelection(i, j) {
-        if (j >= nCols) {
-            variables.push(...Array(j + 1 - nCols).fill(''))
-            variables = variables;
-
-            for (const [i, _] of values.entries()) {
-                values[i].push(...Array(j + 1 - nCols).fill(''));
-            }
-            values = values;
-        }
-        if (i >= nRows) {
-            values.push(...Array(i + 1 - nRows).fill(Array(nCols).fill('')));
-            values = values;
-        }
-
-        rowSelected = i;
-        colSelected = j;
-        resetData();
-    }
-
-    function go(direction: "up" | "down" | "left" | "right") {
-        if (direction === "up") {
-            setSelection(rowSelected > -1 ? rowSelected - 1 : -1, colSelected);
-        } else if (direction === "down") {
-            setSelection(rowSelected + 1, colSelected);
-        } else if (direction === 'left') {
-            setSelection(rowSelected, colSelected > 0 ? colSelected - 1 : 0);
-        } else if (direction === 'right') {
-            setSelection(rowSelected, colSelected + 1);
-        }
-    }
-
-
-    function handleKeyInput(event: KeyboardEvent) {
-        console.log(event);
-        if (event.target === editingInput && !['Escape', 'Tab', 'Enter'].includes(event.key)) return;
-
-        if (event.key === 'Escape' && editing) {
-            resetData();
-            editing = false;
-            editingInput.blur();
-        } else if (event.key === 'Tab' && editing) {
-            updateData();
-            event.shiftKey ? go('left') : go('right');
-            event.preventDefault();
-        } else if (event.key === 'Enter' && !editing) {
-            editingInput.focus();
-        } else if (event.key === 'Enter' && editing) {
-            updateData();
-            event.shiftKey ? go('up') : go('down');
-        } else if (event.key === 'ArrowUp') {
-            go('up');
-        } else if (event.key === 'ArrowDown') {
-            go('down');
-        } else if (event.key === 'ArrowRight') {
-            go('right');
-        } else if (event.key === 'ArrowLeft') {
-            go('left');
-        } else {
-            console.log('not handling')
-        }
-    }
-
-    function updateData() {
+    function storeSelected() {
         if (rowSelected === -1) {  // Editing header
             variables[colSelected] = valueSelected;
             variables = variables;
@@ -86,7 +23,7 @@
         } else if (codes.has(colSelected)) {  // Have a value, but used to be code
             codes.delete(colSelected);
             codes = codes;
-            for (const [i, _] of values.entries()) { // Overwirte everything
+            for (const [i, _] of values.entries()) { // Overwrite everything
                 values[i][colSelected] = valueSelected;
             }
             values = values;
@@ -96,7 +33,7 @@
         }
     }
 
-    function resetData() {
+    function loadSelected() {
         if (rowSelected === -1) {
             valueSelected = variables[colSelected];
         } else if (codes.has(colSelected)) {
@@ -105,6 +42,71 @@
             valueSelected = values[rowSelected][colSelected];
         }
     }
+
+    function goTo(i, j) {
+        // Expand grid if needed.
+        if (j >= nCols) {
+            // How many cols to add: we want to be able to *index* on j,
+            // which is the j+1'th column.
+            variables.push(...Array(j + 1 - nCols).fill(''))
+            variables = variables;
+
+            for (const [i, _] of values.entries()) {
+                values[i].push(...Array(j + 1 - nCols).fill(''));
+            }
+            values = values;
+        }
+        if (i >= nRows) {
+            values.push(...Array(i + 1 - nRows).fill(Array(nCols >= j ? nCols : j).fill('')));
+            values = values;
+        }
+
+        rowSelected = i;
+        colSelected = j;
+        loadSelected();
+    }
+
+    function step(direction: "up" | "down" | "left" | "right") {
+        // Move the selection one step in the indicated direction
+        if (direction === "up") {
+            goTo(rowSelected > -1 ? rowSelected - 1 : -1, colSelected);
+        } else if (direction === "down") {
+            goTo(rowSelected + 1, colSelected);
+        } else if (direction === 'left') {
+            goTo(rowSelected, colSelected > 0 ? colSelected - 1 : 0);
+        } else if (direction === 'right') {
+            goTo(rowSelected, colSelected + 1);
+        }
+    }
+
+
+    function handleKeyInput(event: KeyboardEvent) {
+        if (event.target === editingInput && !['Escape', 'Tab', 'Enter'].includes(event.key)) return;
+
+        if (event.key === 'Escape' && editing) {
+            loadSelected();
+            editing = false;
+            editingInput.blur();
+        } else if (event.key === 'Tab' && editing) {
+            storeSelected();
+            event.shiftKey ? step('left') : step('right');
+            event.preventDefault();
+        } else if (event.key === 'Enter' && !editing) {
+            editingInput.focus();
+        } else if (event.key === 'Enter' && editing) {
+            storeSelected();
+            event.shiftKey ? step('up') : step('down');
+        } else if (event.key === 'ArrowUp') {
+            step('up');
+        } else if (event.key === 'ArrowDown') {
+            step('down');
+        } else if (event.key === 'ArrowRight') {
+            step('right');
+        } else if (event.key === 'ArrowLeft') {
+            step('left');
+        }
+    }
+
 </script>
 
 <svelte:window on:keyup={handleKeyInput}/>
@@ -120,7 +122,7 @@
                                bind:htmlElement={editingInput}/>
                 </th>
             {:else}
-                <th on:click={() => { setSelection(-1, j); editing = true; }}>{variable}</th>
+                <th on:click={() => { goTo(-1, j); editing = true; }}>{variable}</th>
             {/if}
         {/each}
     </tr>
@@ -136,7 +138,7 @@
                                    bind:htmlElement={editingInput}/>
                     </td>
                 {:else}
-                    <td on:click={() => { setSelection(i, j); editing = true; }}>{value}</td>
+                    <td on:click={() => { goTo(i, j); editing = true; }}>{value}</td>
                 {/if}
             {/each}
         </tr>
