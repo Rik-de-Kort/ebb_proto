@@ -14,7 +14,7 @@
             if (codes.has(i)) {
                 result.push(`${variable} = ${codes.get(i)}`);
             } else {
-                result.push(`${variable} = ${values[0][i] !== '' ? values[0][i] : 'None'}`);
+                result.push(`${variable} = ${values[0][i] !== '' ? variable : 'None'}`);
             }
         }
         return result.join('\n');
@@ -24,7 +24,32 @@
     let values: any[][] = [[0, 2, 4, 2], [1, 3, 5, 4]];
     let codes: Map<number, string> = new Map([[3, "first + second"]]);
 
-    $: code = asCode(variables, values, codes);
+    let code: string;
+    $: {
+        code = asCode(variables, values, codes);
+        evalCode();
+    }
+
+    function evalCode() {
+        if (!pyodide) return;
+        for (const [i, row] of values.entries()) {
+            // Set variables to this row's state
+            for (const [j, value] of row.entries()) {
+                if (!codes.has(j)) {
+                    pyodide.globals.set(variables[j], value);
+                }
+            }
+            // Run code
+            pyodide.runPython(code);
+
+            // Pick out result
+            for (const [j, variable] of variables.entries()) {
+                values[i][j] = pyodide.globals.get(variable);
+            }
+        }
+        values = values;
+    }
+
 
     let pyodide: PyodideInterface;
     onMount(async () => {
@@ -37,9 +62,6 @@
         console.log(counter);
         counter = counter + 1;
         console.log({variables, values, codes});
-        if (pyodide) {
-            pyodide.runPython(code);
-        }
     }
 </script>
 
