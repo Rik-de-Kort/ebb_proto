@@ -4,6 +4,7 @@
     export let variables: string[] = ["first", "second", "third", "fourth"];
     export let values: any[][] = [[0, 2, 4, 2], [1, 3, 5, 4]];
     export let codes: Map<number, string> = new Map([[3, "first + second"]]);
+    // Need some way to block to keypresses from getting interpreted if the focus is elsewhere
     $: [nRows, nCols] = [values.length, values[0].length];
 
     let [rowSelected, colSelected] = [0, 1];

@@ -63,6 +63,14 @@
         counter = counter + 1;
         console.log({variables, values, codes});
     }
+
+    function codeChange() {
+        console.log('code changed!', {code});
+        const newLine = code.split('\n')[3].split(' = ')[1];
+        console.log({code, newLine})
+        codes.set(3, newLine);
+        evalCode();
+    }
 </script>
 
 <div id="container">
@@ -70,7 +78,7 @@
         <Grid bind:variables bind:values bind:codes/>
     </div>
     <div id="editor">
-        <CodeMirror bind:value={code} lang={python()}/>
+        <CodeMirror bind:value={code} on:change={codeChange} lang={python()}/>
     </div>
 </div>
 
