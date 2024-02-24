@@ -7,6 +7,13 @@
     import CodeMirror from "svelte-codemirror-editor";
     import {python} from "@codemirror/lang-python";
 
+    // In order to make editing code change the cells in the grid, we need to write event handlers, since Svelte
+    // does not support cyclic variable binding. In order to prevent jank, it's critical that these mappings are
+    // inverses of eachother.
+    // However, it is possible to create malformed inputs, and ideally you want to keep those around until "something"
+    // changes. Maybe there should be some merging logic, but for a prototype I think just blocking sync will work fine.
+    // See the "bind"-route for a proof of concept.
+
     function asCode(variables: string[], values: any[][], codes: Map<number, string>): string {
         let result = [];
         for (const [i, variable] of variables.entries()) {
