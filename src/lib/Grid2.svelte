@@ -18,11 +18,12 @@
         ]
     );
     let mode: Mode = $state({t: ModeEnum.Navigate});
-    let selection: number[][] = $state([]);
+    let selection = $state([[-1, -1], [-1, -1]]);
     let activeCell = $state({row: 0, col: 0});
 
     function isSelected(row: number, col: number) {
-        return selection.some(([i, j]) => row === i && col === j);
+        const [[row_start, col_start], [row_end, col_end]] = selection;
+        return (row_start <= row) && (row <= row_end) && (col_start <= col) && (col <= col_end);
     }
 
     function isActive(row: number, col: number) {
@@ -60,18 +61,14 @@
                 activeCell = {row: row, col: col};
             }
         } else if (mode.t === ModeEnum.Edit) {
-            if (row === -1 || col === -1) {
-                handleGutterClick(row, col, false);
-            } else if (activeCell.row === row && activeCell.col === col) {
+            if (activeCell.row === row && activeCell.col === col) {
                 null;
             } else {
                 mode = {t: ModeEnum.NavigateWhileEdit, cache: mode.cache};
                 selection = [[row, col]];
             }
         } else if (mode.t === ModeEnum.NavigateWhileEdit) {
-            if (row === -1 || col === -1) {
-                handleGutterClick(row, col, false);
-            } else if (activeCell.row === row && activeCell.col === col) {
+            if (activeCell.row === row && activeCell.col === col) {
                 selection = [];
             } else {
                 selection = [[row, col]];
@@ -87,13 +84,13 @@
 
         if (mode.t === ModeEnum.Navigate) {
             mode = {t: ModeEnum.Edit, cache: data[row][col].f};
-            selection = [];
+            selection = [[-1, -1], [-1, -1]];
             activeCell = {row: row, col: col};
         } else if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
             data[activeCell.row][activeCell.col].f = mode.cache;
             mode = {t: ModeEnum.Edit, cache: data[row][col].f};
             activeCell = {row: row, col: col};
-            selection = [];
+            selection = [[-1, -1], [-1, -1]];
         }
     }
 
@@ -110,7 +107,72 @@
             }, 200);
         }
     }
+
+    function move(e: KeyboardEvent) {
+        if (!e.ctrlKey) {  // Don't jump
+            if (e.key === 'ArrowRight') {
+                activeCell.col = activeCell.col + 1;
+                alert('implement selection expansion');
+                if (e.shiftKey) selection[1] = ([activeCell.row, activeCell.col]);
+            } else if (e.key === 'ArrowLeft') {
+                activeCell.col = Math.max(0, activeCell.col - 1);
+                if (e.shiftKey) selection[0] = [activeCell.row, activeCell.col];
+                alert('implement selection expansion');
+            } else if (e.key === 'ArrowUp') {
+                activeCell.row = Math.max(0, activeCell.row - 1);
+                alert('implement selection expansion');
+                if (e.shiftKey) selection.push([activeCell.row, activeCell.col]);
+            } else if (e.key === 'ArrowDown') {
+                activeCell.row = activeCell.row + 1;
+                alert('implement selection expansion');
+                if (e.shiftKey) selection.push([activeCell.row, activeCell.col]);
+            }
+        } else {
+            if (e.key === 'ArrowRight') {
+                activeCell.col = data[0].length - 1;
+                alert('implement selection expansion');
+                if (e.shiftKey) {
+                    for (let j=data[0].length-1; j--; j > activeCell.col) {
+                        selection.push([activeCell.row, j]);
+                    }
+                }
+            } else if (e.key === 'ArrowLeft') {
+                activeCell.col = 0;
+                alert('implement selection expansion');
+                if (e.shiftKey) {
+                    for (let j=0; j++; j < activeCell.col) {
+                        selection.push([activeCell.row, j]);
+                    }
+                }
+            } else if (e.key === 'ArrowUp') {
+                activeCell.row = 0 ;
+                alert('implement selection expansion');
+                if (e.shiftKey) {
+                    for (let i=data.length-1; i--; i > activeCell.row) {
+                        selection.push([i, activeCell.col]);
+                    }
+                }
+            } else if (e.key === 'ArrowDown') {
+                activeCell.row = data.length - 1;
+                alert('implement selection expansion');
+                if (e.shiftKey) {
+                    for (let i=0; i++; i < activeCell.row) {
+                        selection.push([i, activeCell.col]);
+                    }
+                }
+            }
+        }
+    }
+
+    function handleKeyUp(e: KeyboardEvent) {
+        console.log(e);
+        if (mode.t === ModeEnum.Navigate) {
+            move(e);
+        }
+    }
 </script>
+
+<svelte:body on:keyup={handleKeyUp} />
 
 Headers: {JSON.stringify(headers)}<br>
 Data: {JSON.stringify(data)}<br>
@@ -128,6 +190,7 @@ Active cell: {JSON.stringify(activeCell)}<br>
             <th
                     class="gutter"
                     on:click={(e) => handleClick(e, -1, j)}
+                    on:keyup={(e) => handleKeyUp(e)}
             >
                 {header}
             </th>
@@ -150,6 +213,7 @@ Active cell: {JSON.stringify(activeCell)}<br>
                             class:active={isActive(i, j)}
                             class:selected={isSelected(i, j)}
                             on:click={(e) => handleClick(e, i, j)}
+                            on:keyup={(e) => handleKeyUp(e)}
                     >
                         <input type="text" value={cell.f}>
                     </td>
@@ -158,6 +222,7 @@ Active cell: {JSON.stringify(activeCell)}<br>
                             class:active={isActive(i, j)}
                             class:selected={isSelected(i, j)}
                             on:click={(e) => handleClick(e, i, j)}
+                            on:keyup={(e) => handleKeyUp(e)}
                     >
                         {cell.d}
                     </td>

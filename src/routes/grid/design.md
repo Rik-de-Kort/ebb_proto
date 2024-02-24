@@ -44,6 +44,7 @@ Keyboard events: navigating-while-editing
 Mouse events: navigating
 - [x] Double-click to start editing
 - [x] Click in gutter to select column or row
+- [ ] Double click in header to rename
 - [ ] Click-and-drag in gutter-betweens to resize column or row
 - [ ] Double-click in gutter-betweens to resize column or row to fit
     - This is probably a bit difficult
