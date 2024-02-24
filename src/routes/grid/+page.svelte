@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Grid from "$lib/Grid.svelte"
+    import Grid2 from "$lib/Grid2.svelte"
 </script>
 
-<Grid />
+<Grid2 />
