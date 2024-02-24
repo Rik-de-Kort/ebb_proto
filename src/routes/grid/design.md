@@ -54,9 +54,10 @@ Mouse events: navigating
 - [ ] Right click -> context menu to delete rows/columns, copy, or clear for clicked-on cell
 
 Mouse events: editing
-- [ ] If event in currently editing cell: system default
-- [ ] If event outside currently editing cell: navigating while inserting a reference to the selection at the edit cursor
-- [ ] Double click outside currently editing cell: exit edit mode, discard changes, and select clicked-on cell
+- [x] If event in currently editing cell: system default
+- [x] If event outside currently editing cell: navigating
+- [ ] Inserting a reference to the selection at the edit cursor in navigate-while-edit
+- [x] Double click outside currently editing cell: exit edit mode, discard changes, and select clicked-on cell
 
 TODO:
 - [ ] Describe range editing semantics -> replace all with new input

@@ -1,9 +1,14 @@
 <script lang="ts">
-    enum Mode {
-        Navigate,
-        Edit,
-        NavigateWhileEdit,
+    enum ModeEnum {
+        Navigate = 'navigate',
+        Edit = 'edit',
+        NavigateWhileEdit = 'navigate-while-edit',
     }
+
+    type Mode = ({ t: ModeEnum.Navigate }
+        | { t: ModeEnum.Edit, cache: string | number }
+        | { t: ModeEnum.NavigateWhileEdit, cache: string | number });
+
 
     let headers = $state(['first', 'second', 'third', 'fourth']);
 
@@ -14,7 +19,7 @@
             [{d: 5, f: 5}, {d: 6, f: 2}, {d: 9, f: 3}, {d: 11, f: 'first+second'}],
         ]
     );
-    let mode = $state(Mode.Navigate);
+    let mode: Mode = $state({t: ModeEnum.Navigate});
     let selection: number[][] = $state([]);
     let activeCell = $state({row: 0, col: 0});
 
@@ -26,44 +31,50 @@
         return activeCell.row === row && activeCell.col === col;
     }
 
-    function handleDoubleClick(row: number, col: number) {
-        console.log(`double clicked [${row}, ${col}]`);
-        if (mode === Mode.Navigate) {
-            if (row === -1 || col === -1) {  // gutter click, do nothing for now
-                null;
+
+    function handleGutterClick(row: number, col: number) {
+        const setActive = mode.t === ModeEnum.Navigate;
+        if (row === -1 && col === -1) {  // Click in top-left thingy
+            const rows = [...Array(data.length).keys()];
+            const cols = [...Array(data[0].length).keys()];
+            selection = rows.flatMap((i) => cols.map((j) => [i, j]));
+            if (setActive) activeCell = {row: 0, col: 0};
+        } else if (row === -1) {  // Click in header
+            selection = [...Array(data.length).keys()].map((i) => [i, col]);
+            if (setActive) activeCell = {row: 0, col: col};
+        } else if (col === -1) {  // Click in row indicator
+            selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
+            if (setActive) activeCell = {row: row, col: 0};
+        }
+
+    }
+
+    function handleSingleClick(row: number, col: number) {
+        console.log(`clicked [${row}, ${col}] times`);
+        if (row === -1 || col === -1) {
+            handleGutterClick(row, col, true);
+            return;
+        }
+
+        if (mode.t === ModeEnum.Navigate) {
+            if (activeCell.row === row && activeCell.col === col) {
+                mode = {t: ModeEnum.Edit, cache: data[row][col].f};
             } else {
-                mode = Mode.Edit;
                 selection = [];
                 activeCell = {row: row, col: col};
             }
-        } else if (mode === Mode.Edit) {
-            // Todo: There's probably a nice way to factor the navigation stuff but I don't see it yet.
-            if (row === -1 && col === -1) {  // Click in top-left thingy
-                mode = Mode.NavigateWhileEdit;
-                const rows = [...Array(data.length).keys()];
-                const cols = [...Array(data[0].length).keys()];
-                selection = rows.flatMap((i) => cols.map((j) => [i, j]));
-            } else if (row === -1) {  // Click in header
-                mode = Mode.NavigateWhileEdit;
-                selection = [...Array(data.length).keys()].map((i) => [i, col]);
-            } else if (col === -1) {  // Click in row indicator
-                mode = Mode.NavigateWhileEdit;
-                selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
+        } else if (mode.t === ModeEnum.Edit) {
+            if (row === -1 || col === -1) {
+                handleGutterClick(row, col, false);
             } else if (activeCell.row === row && activeCell.col === col) {
                 null;
             } else {
-                mode = Mode.NavigateWhileEdit;
+                mode = {t: ModeEnum.NavigateWhileEdit, cache: mode.cache};
                 selection = [[row, col]];
             }
-        } else if (mode === Mode.NavigateWhileEdit) {
-            if (row === -1 && col === -1) {  // Click in top-left thingy
-                const rows = [...Array(data.length).keys()];
-                const cols = [...Array(data[0].length).keys()];
-                selection = rows.flatMap((i) => cols.map((j) => [i, j]));
-            } else if (row === -1) {  // Click in header
-                selection = [...Array(data.length).keys()].map((i) => [i, col]);
-            } else if (col === -1) {  // Click in row indicator
-                selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
+        } else if (mode.t === ModeEnum.NavigateWhileEdit) {
+            if (row === -1 || col === -1) {
+                handleGutterClick(row, col, false);
             } else if (activeCell.row === row && activeCell.col === col) {
                 selection = [];
             } else {
@@ -72,8 +83,27 @@
         }
     }
 
+    function handleDoubleClick(row: number, col: number) {
+        console.log(`double clicked [${row}, ${col}]`);
+        if (row === -1 || col === -1) {  // gutter click, do nothing for now
+            return;
+        }
+
+        if (mode.t === ModeEnum.Navigate) {
+            mode = {t: ModeEnum.Edit, cache: data[row][col].f};
+            selection = [];
+            activeCell = {row: row, col: col};
+        } else if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
+            data[activeCell.row][activeCell.col].f = mode.cache;
+            mode = {t: ModeEnum.Edit, cache: data[row][col].f};
+            activeCell = {row: row, col: col};
+            selection = [];
+        }
+    }
+
     let timeout: number | null = null;
-    function handleClick(e: PointerEvent, row: number, col: number) {
+
+    function handleClick(e: Event, row: number, col: number) {
         if (timeout) {
             clearTimeout(timeout);
             timeout = null;
@@ -83,69 +113,12 @@
                 handleSingleClick(row, col);
             }, 200);
         }
-
-    }
-
-    function handleSingleClick(row: number, col: number) {
-        console.log(`clicked [${row}, ${col}] times`);
-        if (mode === Mode.Navigate) {
-            if (row === -1 && col === -1) {  // Click in top-left thingy
-                const rows = [...Array(data.length).keys()];
-                const cols = [...Array(data[0].length).keys()];
-                selection = rows.flatMap((i) => cols.map((j) => [i, j]));
-                activeCell = {row: 0, col: 0};
-            } else if (row === -1) {  // Click in header
-                selection = [...Array(data.length).keys()].map((i) => [i, col]);
-                activeCell = {row: 0, col: col};
-            } else if (col === -1) {  // Click in row indicator
-                selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
-                activeCell = {row: row, col: 0};
-            } else if (activeCell.row === row && activeCell.col === col) {
-                mode = Mode.Edit;
-            } else {
-                selection = [];
-                activeCell = {row: row, col: col};
-            }
-        } else if (mode === Mode.Edit) {
-            // Todo: There's probably a nice way to factor the navigation stuff but I don't see it yet.
-            if (row === -1 && col === -1) {  // Click in top-left thingy
-                mode = Mode.NavigateWhileEdit;
-                const rows = [...Array(data.length).keys()];
-                const cols = [...Array(data[0].length).keys()];
-                selection = rows.flatMap((i) => cols.map((j) => [i, j]));
-            } else if (row === -1) {  // Click in header
-                mode = Mode.NavigateWhileEdit;
-                selection = [...Array(data.length).keys()].map((i) => [i, col]);
-            } else if (col === -1) {  // Click in row indicator
-                mode = Mode.NavigateWhileEdit;
-                selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
-            } else if (activeCell.row === row && activeCell.col === col) {
-                null;
-            } else {
-                mode = Mode.NavigateWhileEdit;
-                selection = [[row, col]];
-            }
-        } else if (mode === Mode.NavigateWhileEdit) {
-            if (row === -1 && col === -1) {  // Click in top-left thingy
-                const rows = [...Array(data.length).keys()];
-                const cols = [...Array(data[0].length).keys()];
-                selection = rows.flatMap((i) => cols.map((j) => [i, j]));
-            } else if (row === -1) {  // Click in header
-                selection = [...Array(data.length).keys()].map((i) => [i, col]);
-            } else if (col === -1) {  // Click in row indicator
-                selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
-            } else if (activeCell.row === row && activeCell.col === col) {
-                selection = [];
-            } else {
-                selection = [[row, col]];
-            }
-        }
     }
 </script>
 
 Headers: {JSON.stringify(headers)}<br>
 Data: {JSON.stringify(data)}<br>
-Mode: {Mode[mode]}<br>
+Mode: {JSON.stringify(mode)}<br>
 Selection: {JSON.stringify(selection)}<br>
 Active cell: {JSON.stringify(activeCell)}<br>
 <table>
@@ -175,7 +148,7 @@ Active cell: {JSON.stringify(activeCell)}<br>
                 {i}
             </td>
             {#each row as cell, j}
-                {#if (mode === Mode.Edit || mode === Mode.NavigateWhileEdit) && isActive(i, j)}
+                {#if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) && isActive(i, j)}
                     <td
                             class="editing"
                             class:active={isActive(i, j)}
