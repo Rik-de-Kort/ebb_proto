@@ -9,9 +9,7 @@
         | { t: ModeEnum.Edit, cache: string | number }
         | { t: ModeEnum.NavigateWhileEdit, cache: string | number });
 
-
     let headers = $state(['first', 'second', 'third', 'fourth']);
-
     let data = $state(
         [
             [{d: 1, f: 1}, {d: 2, f: 2}, {d: 3, f: 3}, {d: 3, f: 'first+second'}],
@@ -31,7 +29,6 @@
         return activeCell.row === row && activeCell.col === col;
     }
 
-
     function handleGutterClick(row: number, col: number) {
         const setActive = mode.t === ModeEnum.Navigate;
         if (row === -1 && col === -1) {  // Click in top-left thingy
@@ -46,7 +43,6 @@
             selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
             if (setActive) activeCell = {row: row, col: 0};
         }
-
     }
 
     function handleSingleClick(row: number, col: number) {
