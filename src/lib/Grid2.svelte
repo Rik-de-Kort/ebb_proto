@@ -1,4 +1,6 @@
 <script lang="ts">
+    import {Direction, Selection} from "$lib/Selection";
+
     enum ModeEnum {
         Navigate = 'navigate',
         Edit = 'edit',
@@ -18,13 +20,8 @@
         ]
     );
     let mode: Mode = $state({t: ModeEnum.Navigate});
-    let selection = $state([[-1, -1], [-1, -1]]);
+    let selection = $state(new Selection());
     let activeCell = $state({row: 0, col: 0});
-
-    function isSelected(row: number, col: number) {
-        const [[row_start, col_start], [row_end, col_end]] = selection;
-        return (row_start <= row) && (row <= row_end) && (col_start <= col) && (col <= col_end);
-    }
 
     function isActive(row: number, col: number) {
         return activeCell.row === row && activeCell.col === col;
@@ -57,7 +54,7 @@
             if (activeCell.row === row && activeCell.col === col) {
                 mode = {t: ModeEnum.Edit, cache: data[row][col].f};
             } else {
-                selection = [];
+                selection.clear();
                 activeCell = {row: row, col: col};
             }
         } else if (mode.t === ModeEnum.Edit) {
@@ -65,13 +62,13 @@
                 null;
             } else {
                 mode = {t: ModeEnum.NavigateWhileEdit, cache: mode.cache};
-                selection = [[row, col]];
+                selection.seed([row, col]);
             }
         } else if (mode.t === ModeEnum.NavigateWhileEdit) {
             if (activeCell.row === row && activeCell.col === col) {
-                selection = [];
+                selection.clear();
             } else {
-                selection = [[row, col]];
+                selection.seed([row, col]);
             }
         }
     }
@@ -112,54 +109,30 @@
         if (!e.ctrlKey) {  // Don't jump
             if (e.key === 'ArrowRight') {
                 activeCell.col = activeCell.col + 1;
-                alert('implement selection expansion');
-                if (e.shiftKey) selection[1] = ([activeCell.row, activeCell.col]);
+                if (e.shiftKey) selection.expand(Direction.right);
             } else if (e.key === 'ArrowLeft') {
                 activeCell.col = Math.max(0, activeCell.col - 1);
-                if (e.shiftKey) selection[0] = [activeCell.row, activeCell.col];
-                alert('implement selection expansion');
+                if (e.shiftKey) selection.expand(Direction.left);
             } else if (e.key === 'ArrowUp') {
                 activeCell.row = Math.max(0, activeCell.row - 1);
-                alert('implement selection expansion');
-                if (e.shiftKey) selection.push([activeCell.row, activeCell.col]);
+                if (e.shiftKey) selection.expand(Direction.up);
             } else if (e.key === 'ArrowDown') {
                 activeCell.row = activeCell.row + 1;
-                alert('implement selection expansion');
-                if (e.shiftKey) selection.push([activeCell.row, activeCell.col]);
+                if (e.shiftKey) selection.expand(Direction.down);
             }
         } else {
             if (e.key === 'ArrowRight') {
                 activeCell.col = data[0].length - 1;
-                alert('implement selection expansion');
-                if (e.shiftKey) {
-                    for (let j=data[0].length-1; j--; j > activeCell.col) {
-                        selection.push([activeCell.row, j]);
-                    }
-                }
+                if (e.shiftKey) selection.expand(Direction.right, data[0].length - activeCell.col);
             } else if (e.key === 'ArrowLeft') {
                 activeCell.col = 0;
-                alert('implement selection expansion');
-                if (e.shiftKey) {
-                    for (let j=0; j++; j < activeCell.col) {
-                        selection.push([activeCell.row, j]);
-                    }
-                }
+                if (e.shiftKey) selection.expand(Direction.left, activeCell.col);
             } else if (e.key === 'ArrowUp') {
                 activeCell.row = 0 ;
-                alert('implement selection expansion');
-                if (e.shiftKey) {
-                    for (let i=data.length-1; i--; i > activeCell.row) {
-                        selection.push([i, activeCell.col]);
-                    }
-                }
+                if (e.shiftKey) selection.expand(Direction.up, activeCell.row);
             } else if (e.key === 'ArrowDown') {
                 activeCell.row = data.length - 1;
-                alert('implement selection expansion');
-                if (e.shiftKey) {
-                    for (let i=0; i++; i < activeCell.row) {
-                        selection.push([i, activeCell.col]);
-                    }
-                }
+                if (e.shiftKey) selection.expand(Direction.down, data.length - activeCell.row);
             }
         }
     }
@@ -211,7 +184,7 @@ Active cell: {JSON.stringify(activeCell)}<br>
                     <td
                             class="editing"
                             class:active={isActive(i, j)}
-                            class:selected={isSelected(i, j)}
+                            class:selected={selection.has([i, j])}
                             on:click={(e) => handleClick(e, i, j)}
                             on:keyup={(e) => handleKeyUp(e)}
                     >
@@ -220,7 +193,7 @@ Active cell: {JSON.stringify(activeCell)}<br>
                 {:else}
                     <td
                             class:active={isActive(i, j)}
-                            class:selected={isSelected(i, j)}
+                            class:selected={selection.has([i, j])}
                             on:click={(e) => handleClick(e, i, j)}
                             on:keyup={(e) => handleKeyUp(e)}
                     >

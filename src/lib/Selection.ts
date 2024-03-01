@@ -3,37 +3,42 @@ export enum Direction {
 }
 
 export class Selection {
-    topLeft: [number, number] | null = null;
-    bottomRight: [number, number] | null = null;
+    activeCell: [number, number] = [0, 0];
+    private corners: [[number, number], [number, number]] | null = null;
+
+    get topLeft() {
+        return this.corners ? this.corners[0] : this.activeCell;
+    }
+
+    get bottomRight() {
+        return this.corners ? this.corners[1] : this.activeCell;
+    }
 
     clear() {
-        this.topLeft = this.bottomRight = null;
+        this.corners = null;
     }
 
-    seed([row, col]: [number, number]) {
-        this.clear();
-        if (!this.topLeft || !this.bottomRight) {
-            this.topLeft = [row, col];
-            this.bottomRight = [row, col];
-        }
+    move(direction: Direction, by=1, expandSelection=false) {
+        // Todo: implement move
+        null;
     }
 
-    expand(direction: Direction) {
-        if (!this.topLeft || !this.bottomRight) {
-            throw new Error(`Trying to expand empty selection`)
-        } else if (direction === Direction.up) {
-            this.topLeft[0] = Math.max(this.topLeft[0] - 1, 0);
+    expand(direction: Direction, by = 1) {
+        this.corners = this.corners ?? structuredClone([this.activeCell, this.activeCell]);
+
+        if (direction === Direction.up) {
+            this.topLeft[0] = Math.max(this.topLeft[0] - by, 0);
         } else if (direction === Direction.left) {
-            this.topLeft[1] = Math.max(this.topLeft[1] - 1, 0);
+            this.topLeft[1] = Math.max(this.topLeft[1] - by, 0);
         } else if (direction === Direction.down) {
-            this.bottomRight[0] = this.bottomRight[0] + 1;
+            this.bottomRight[0] = this.bottomRight[0] + by;
         } else if (direction === Direction.right) {
-            this.bottomRight[1] = this.bottomRight[1] + 1;
+            this.bottomRight[1] = this.bottomRight[1] + by;
         }
     }
 
     shrink(direction: Direction) {
-        if (!this.topLeft || !this.bottomRight) {
+        if (!this.corners) {
             return;
         } else if (this.topLeft[0] === this.bottomRight[0] && this.topLeft[1] === this.bottomRight[1]) {
             this.clear();
