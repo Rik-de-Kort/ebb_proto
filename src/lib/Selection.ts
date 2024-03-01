@@ -13,7 +13,8 @@ export class Selection {
     seed([row, col]: [number, number]) {
         this.clear();
         if (!this.topLeft || !this.bottomRight) {
-            this.topLeft = this.bottomRight = [row, col];
+            this.topLeft = [row, col];
+            this.bottomRight = [row, col];
         }
     }
 
