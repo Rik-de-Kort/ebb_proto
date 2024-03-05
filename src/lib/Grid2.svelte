@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {Direction, Selection} from "$lib/Selection.svelte";
+    import {Selection} from "$lib/Selection.svelte";
 
     enum ModeEnum {
         Navigate = 'navigate',
@@ -27,26 +27,21 @@
         return activeRow === row && activeCol === col;
     }
 
-    function handleGutterClick(row: number, col: number) {
-        const setActive = mode.t === ModeEnum.Navigate;
-        if (row === -1 && col === -1) {  // Click in top-left thingy
-            const rows = [...Array(data.length).keys()];
-            const cols = [...Array(data[0].length).keys()];
-            selection = rows.flatMap((i) => cols.map((j) => [i, j]));
-            if (setActive) activeCell = {row: 0, col: 0};
-        } else if (row === -1) {  // Click in header
-            selection = [...Array(data.length).keys()].map((i) => [i, col]);
-            if (setActive) activeCell = {row: 0, col: col};
-        } else if (col === -1) {  // Click in row indicator
-            selection = [...Array(data[0].length).keys()].map((j) => [row, j]);
-            if (setActive) activeCell = {row: row, col: 0};
+    function handleGutterClick(e: MouseEvent, row: number, col: number) {
+        console.log(`Gutterclick ${e}, ${row}, ${col}`);
+        selection.moveTo([row, col], e.shiftKey);
+        if (row === -1) {
+            selection.expandColumns();
+        }
+        if (col === -1) {
+            selection.expandRows();
         }
     }
 
     function handleSingleClick(e: MouseEvent, row: number, col: number) {
         console.log(`clicked [${row}, ${col}]`);
         if (row === -1 || col === -1) {
-            handleGutterClick(row, col, true);
+            handleGutterClick(e, row, col);
             return;
         }
 
@@ -55,7 +50,7 @@
             if (activeRow === row && activeCol === col) {
                 mode = {t: ModeEnum.Edit, cache: data[row][col].f};
             } else {
-                selection.moveTo(row, col, e.shiftKey);
+                selection.moveTo([row, col], e.shiftKey);
             }
         } else if (mode.t === ModeEnum.Edit) {
             if (activeRow === row && activeCol === col) {
@@ -67,7 +62,7 @@
             if (activeRow === row && activeCol === col) {
                 selection.clear();
             } else {
-                selection.moveTo(row, col, false);
+                selection.moveTo([row, col], false);
                 selection.ensureSelection();
             }
         }
@@ -113,17 +108,17 @@
     function move(e: KeyboardEvent) {
         const [activeRow, activeCol] = selection.activeCell;
         if (e.key === 'ArrowRight') {
-            const by = e.ctrlKey ? data[0].length - activeCol : 1;
-            selection.move(Direction.right, by, e.shiftKey);
+            const by = e.ctrlKey ? data[0].length - activeCol - 1 : 1;
+            selection.moveTo([activeRow, activeCol + by], e.shiftKey);
         } else if (e.key === 'ArrowLeft') {
             const by = e.ctrlKey ? activeCol : 1;
-            selection.move(Direction.left, by, e.shiftKey);
+            selection.moveTo([activeRow, activeCol - by], e.shiftKey);
         } else if (e.key === 'ArrowUp') {
             const by = e.ctrlKey ? activeRow : 1;
-            selection.move(Direction.up, by, e.shiftKey);
+            selection.moveTo([activeRow - by, activeCol], e.shiftKey);
         } else if (e.key === 'ArrowDown') {
-            const by = e.ctrlKey ? data.length - activeRow : 1;
-            selection.move(Direction.down, by, e.shiftKey);
+            const by = e.ctrlKey ? data.length - activeRow - 1: 1;
+            selection.moveTo([activeRow + by, activeCol], e.shiftKey);
         }
     }
 
@@ -140,7 +135,7 @@
 Headers: {JSON.stringify(headers)}<br>
 Data: {JSON.stringify(data)}<br>
 Mode: {JSON.stringify(mode)}<br>
-Selection: {JSON.stringify(selection)}<br>
+Selection: {JSON.stringify([selection.topLeft, selection.bottomRight])}<br>
 Active cell: {JSON.stringify(selection.activeCell)}<br>
 <table>
     <thead>
