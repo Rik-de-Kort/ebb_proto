@@ -15,8 +15,8 @@ Keyboard events: basic navigating
 - [x] Arrow keys to navigate. "Bump" on top and front.
 - [ ] Arrow keys to navigate. Create more rows/columns when "running off"
 - [x] Enter to start editing a cell
-- [ ] Tab to jump to cell on right
-- [ ] Shift+ Tab to jump to cell on left
+- [x] Tab to jump to cell on right
+- [x] Shift+ Tab to jump to cell on left
 - [x] Shift to select a range. 
 - [x] Ctrl to jump to some "edge"
 - [x] Shift+space to select entire row

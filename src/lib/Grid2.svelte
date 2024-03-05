@@ -148,7 +148,7 @@
             } else if (e.key === 'Tab') {
                 selection.clear();
                 const [activeRow, activeCol] = selection.activeCell;
-                const nextCol = e.shiftKey ? activeCol - 1 : activeRow + 1;
+                const nextCol = e.shiftKey ? activeCol - 1 : activeCol + 1;
                 selection.moveTo([activeRow, nextCol]);
             }
 
