@@ -1,40 +1,25 @@
 import {test, assert} from 'vitest';
-import {Selection, Direction} from "$lib/Selection";
+import {Selection, Direction} from "$lib/Selection.svelte";
 
 test('selection object', () => {
     let selection = new Selection();
     assert.equal(selection.size, 0);
 
-    selection.seed([0, 0]);
-    assert.isTrue(selection.topLeft && selection.bottomRight
-        && selection.topLeft[0] === 0 && selection.topLeft[1] === 0
-        && selection.bottomRight[0] === 0 && selection.bottomRight[1] === 0);
-    assert.isTrue(selection.has([0, 0]));
+    selection.move(Direction.down, 2);
+    selection.move(Direction.right, 3);
+    assert.equal(selection.activeCell[0], 2);
+    assert.equal(selection.activeCell[1], 3);
 
-    selection.expand(Direction.right);
-    selection.expand(Direction.right);
-    selection.expand(Direction.down);
-    selection.expand(Direction.down);
-    selection.expand(Direction.down);
-    assert.equal(selection.topLeft[0], 0);
-    assert.equal(selection.topLeft[1], 0);
-    assert.equal(selection.bottomRight[0], 3);
-    assert.equal(selection.bottomRight[1], 2);
-    assert.isTrue(selection.has([1, 1]));
-    assert.equal(selection.size, 12);
+    selection.move(Direction.up, 1, true);
+    selection.move(Direction.right, 2, true);
+    assert.equal(selection.activeCell[0], 1);
+    assert.equal(selection.activeCell[1], 5);
 
-    selection.shrink(Direction.left);
-    assert.isTrue(selection.topLeft && selection.bottomRight
-        && selection.topLeft[0] === 0 && selection.topLeft[1] === 0
-        && selection.bottomRight[0] === 3 && selection.bottomRight[1] === 1);
+    assert.equal(selection.topLeft[0], 1);
+    assert.equal(selection.topLeft[1], 3);
 
-    selection.shrink(Direction.up);
-    assert.isTrue(selection.topLeft && selection.bottomRight
-        && selection.topLeft[0] === 0 && selection.topLeft[1] === 0
-        && selection.bottomRight[0] === 2 && selection.bottomRight[1] === 1);
-    assert.isTrue(!selection.has([3, 2]));
+    assert.equal(selection.bottomRight[0], 2);
+    assert.equal(selection.bottomRight[1], 5);
 
-    selection.clear();
-    assert.isTrue(!selection.topLeft && !selection.bottomRight)
-    assert.equal(selection.size, 0);
+    // Todo: write test for selection jump (from along topLeft to bottom)
 })

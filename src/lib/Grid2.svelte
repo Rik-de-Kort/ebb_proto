@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {Direction, Selection} from "$lib/Selection";
+    import {Direction, Selection} from "$lib/Selection.svelte";
 
     enum ModeEnum {
         Navigate = 'navigate',
@@ -21,10 +21,10 @@
     );
     let mode: Mode = $state({t: ModeEnum.Navigate});
     let selection = $state(new Selection());
-    let activeCell = $state({row: 0, col: 0});
 
     function isActive(row: number, col: number) {
-        return activeCell.row === row && activeCell.col === col;
+        const [activeRow, activeCol] = selection.activeCell;
+        return activeRow === row && activeCol === col;
     }
 
     function handleGutterClick(row: number, col: number) {
@@ -43,38 +43,39 @@
         }
     }
 
-    function handleSingleClick(row: number, col: number) {
-        console.log(`clicked [${row}, ${col}] times`);
+    function handleSingleClick(e: MouseEvent, row: number, col: number) {
+        console.log(`clicked [${row}, ${col}]`);
         if (row === -1 || col === -1) {
             handleGutterClick(row, col, true);
             return;
         }
 
+        const [activeRow, activeCol] = selection.activeCell;
         if (mode.t === ModeEnum.Navigate) {
-            if (activeCell.row === row && activeCell.col === col) {
+            if (activeRow === row && activeCol === col) {
                 mode = {t: ModeEnum.Edit, cache: data[row][col].f};
             } else {
-                selection.clear();
-                activeCell = {row: row, col: col};
+                selection.moveTo(row, col, e.shiftKey);
             }
         } else if (mode.t === ModeEnum.Edit) {
-            if (activeCell.row === row && activeCell.col === col) {
+            if (activeRow === row && activeCol === col) {
                 null;
             } else {
                 mode = {t: ModeEnum.NavigateWhileEdit, cache: mode.cache};
-                selection.seed([row, col]);
             }
         } else if (mode.t === ModeEnum.NavigateWhileEdit) {
-            if (activeCell.row === row && activeCell.col === col) {
+            if (activeRow === row && activeCol === col) {
                 selection.clear();
             } else {
-                selection.seed([row, col]);
+                selection.moveTo(row, col, false);
+                selection.ensureSelection();
             }
         }
     }
 
     function handleDoubleClick(row: number, col: number) {
         console.log(`double clicked [${row}, ${col}]`);
+        return;
         if (row === -1 || col === -1) {  // gutter click, do nothing for now
             return;
         }
@@ -84,7 +85,8 @@
             selection = [[-1, -1], [-1, -1]];
             activeCell = {row: row, col: col};
         } else if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
-            data[activeCell.row][activeCell.col].f = mode.cache;
+            const [activeRow, activeCol] = selection.activeCell;
+            data[activeRow][activeCol].f = mode.cache;
             mode = {t: ModeEnum.Edit, cache: data[row][col].f};
             activeCell = {row: row, col: col};
             selection = [[-1, -1], [-1, -1]];
@@ -94,46 +96,34 @@
     let timeout: number | null = null;
 
     function handleClick(e: Event, row: number, col: number) {
+        e.preventDefault();
         if (timeout) {
             clearTimeout(timeout);
             timeout = null;
             handleDoubleClick(row, col);
         } else {
             timeout = setTimeout(() => {
-                handleSingleClick(row, col);
-            }, 200);
+                timeout = null;
+                handleSingleClick(e, row, col);
+            }, 20);
+            console.log(timeout);
         }
     }
 
     function move(e: KeyboardEvent) {
-        if (!e.ctrlKey) {  // Don't jump
-            if (e.key === 'ArrowRight') {
-                activeCell.col = activeCell.col + 1;
-                if (e.shiftKey) selection.expand(Direction.right);
-            } else if (e.key === 'ArrowLeft') {
-                activeCell.col = Math.max(0, activeCell.col - 1);
-                if (e.shiftKey) selection.expand(Direction.left);
-            } else if (e.key === 'ArrowUp') {
-                activeCell.row = Math.max(0, activeCell.row - 1);
-                if (e.shiftKey) selection.expand(Direction.up);
-            } else if (e.key === 'ArrowDown') {
-                activeCell.row = activeCell.row + 1;
-                if (e.shiftKey) selection.expand(Direction.down);
-            }
-        } else {
-            if (e.key === 'ArrowRight') {
-                activeCell.col = data[0].length - 1;
-                if (e.shiftKey) selection.expand(Direction.right, data[0].length - activeCell.col);
-            } else if (e.key === 'ArrowLeft') {
-                activeCell.col = 0;
-                if (e.shiftKey) selection.expand(Direction.left, activeCell.col);
-            } else if (e.key === 'ArrowUp') {
-                activeCell.row = 0 ;
-                if (e.shiftKey) selection.expand(Direction.up, activeCell.row);
-            } else if (e.key === 'ArrowDown') {
-                activeCell.row = data.length - 1;
-                if (e.shiftKey) selection.expand(Direction.down, data.length - activeCell.row);
-            }
+        const [activeRow, activeCol] = selection.activeCell;
+        if (e.key === 'ArrowRight') {
+            const by = e.ctrlKey ? data[0].length - activeCol : 1;
+            selection.move(Direction.right, by, e.shiftKey);
+        } else if (e.key === 'ArrowLeft') {
+            const by = e.ctrlKey ? activeCol : 1;
+            selection.move(Direction.left, by, e.shiftKey);
+        } else if (e.key === 'ArrowUp') {
+            const by = e.ctrlKey ? activeRow : 1;
+            selection.move(Direction.up, by, e.shiftKey);
+        } else if (e.key === 'ArrowDown') {
+            const by = e.ctrlKey ? data.length - activeRow : 1;
+            selection.move(Direction.down, by, e.shiftKey);
         }
     }
 
@@ -151,7 +141,7 @@ Headers: {JSON.stringify(headers)}<br>
 Data: {JSON.stringify(data)}<br>
 Mode: {JSON.stringify(mode)}<br>
 Selection: {JSON.stringify(selection)}<br>
-Active cell: {JSON.stringify(activeCell)}<br>
+Active cell: {JSON.stringify(selection.activeCell)}<br>
 <table>
     <thead>
     <tr>
