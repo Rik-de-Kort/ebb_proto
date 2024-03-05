@@ -34,8 +34,8 @@ Keyboard events: editing
 - [x] Escape to exit edit mode and discard changes
 - [x] Enter to keep changes and start editing cell below
 - [x] Shift+enter to keep changes and start editing cell above
-- [ ] Tab to keep changes and start editing cell to the right
-- [ ] Shift+Tab to keep changes and start editing cell to the left
+- [x] Tab to keep changes and start editing cell to the right
+- [x] Shift+Tab to keep changes and start editing cell to the left
 - [ ] F2 to change to navigating-while-editing mode
 
 Keyboard events: navigating-while-editing
