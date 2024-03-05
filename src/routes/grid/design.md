@@ -12,13 +12,15 @@ State involved
 - [ ] Mouse cursor position? 
 
 Keyboard events: basic navigating
-- [ ] Arrow keys to navigate. "Bump" on top and front, create more rows/columns when "running off"
-- [ ] Enter to start editing a cell
+- [x] Arrow keys to navigate. "Bump" on top and front.
+- [ ] Arrow keys to navigate. Create more rows/columns when "running off"
+- [x] Enter to start editing a cell
 - [ ] Tab to jump to cell on right
-- [ ] Shift to select a range. 
-- [ ] Ctrl to jump to some "edge"
-- [ ] Shift+space to select entire row
-- [ ] Ctrl+space to select entire column
+- [ ] Shift+ Tab to jump to cell on left
+- [x] Shift to select a range. 
+- [x] Ctrl to jump to some "edge"
+- [x] Shift+space to select entire row
+- [x] Ctrl+space to select entire column
 
 Keyboard events: manipulating cells while navigating
 - [ ] Delete/Backspace to clear a cell or range
@@ -29,9 +31,9 @@ Keyboard events: manipulating cells while navigating
 
 Keyboard events: editing
 - [ ] Default action: system on input box
-- [ ] Escape to exit edit mode and discard changes
-- [ ] Enter to keep changes and start editing cell below
-- [ ] Shift+enter to keep changes and start editing cell above
+- [x] Escape to exit edit mode and discard changes
+- [x] Enter to keep changes and start editing cell below
+- [x] Shift+enter to keep changes and start editing cell above
 - [ ] Tab to keep changes and start editing cell to the right
 - [ ] Shift+Tab to keep changes and start editing cell to the left
 - [ ] F2 to change to navigating-while-editing mode

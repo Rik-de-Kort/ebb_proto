@@ -27,21 +27,18 @@
         return activeRow === row && activeCol === col;
     }
 
-    function handleGutterClick(e: MouseEvent, row: number, col: number) {
-        console.log(`Gutterclick ${e}, ${row}, ${col}`);
-        selection.moveTo([row, col], e.shiftKey);
-        if (row === -1) {
-            selection.expandColumns();
-        }
-        if (col === -1) {
-            selection.expandRows();
-        }
-    }
-
     function handleSingleClick(e: MouseEvent, row: number, col: number) {
         console.log(`clicked [${row}, ${col}]`);
         if (row === -1 || col === -1) {
-            handleGutterClick(e, row, col);
+            console.log(`Gutterclick ${e}, ${row}, ${col}`);
+            if (!e.shiftKey) selection.clear();
+            selection.moveTo([row, col], e.shiftKey);
+            if (row === -1) {
+                selection.selectWholeColumns();
+            }
+            if (col === -1) {
+                selection.selectWholeRows();
+            }
             return;
         }
 
@@ -71,6 +68,22 @@
         }
     }
 
+    function startEditing(row: number, col: number) {
+        mode = {t: ModeEnum.Edit, cache: data[row][col].f};
+        selection.clear();
+        selection.moveTo([row, col]);
+    }
+
+    function stopEditing(save = true) {
+        const [activeRow, activeCol] = selection.activeCell;
+        console.log(`Stop editing ${save} ${[activeRow, activeCol]}`)
+        if ('cache' in mode && !save) {
+            // const [activeRow, activeCol] = selection.activeCell;
+            data[activeRow][activeCol].f = mode.cache;
+        }
+        mode = {t: ModeEnum.Navigate};
+    }
+
     function handleDoubleClick(e: MouseEvent, row: number, col: number) {
         console.log(`double clicked [${row}, ${col}]`);
         if (row === -1 || col === -1) {  // gutter click, do nothing for now
@@ -78,15 +91,10 @@
         }
 
         if (mode.t === ModeEnum.Navigate) {
-            mode = {t: ModeEnum.Edit, cache: data[row][col].f};
-            selection.clear();
-            selection.moveTo([row, col]);
+            startEditing(row, col);
         } else if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
-            const [activeRow, activeCol] = selection.activeCell;
-            data[activeRow][activeCol].f = mode.cache;
-            mode = {t: ModeEnum.Edit, cache: data[row][col].f};
-            selection.clear();
-            selection.moveTo([row, col]);
+            stopEditing(false);
+            startEditing(row, col);
         }
     }
 
@@ -119,20 +127,53 @@
             const by = e.ctrlKey ? activeRow : 1;
             selection.moveTo([activeRow - by, activeCol], e.shiftKey);
         } else if (e.key === 'ArrowDown') {
-            const by = e.ctrlKey ? data.length - activeRow - 1: 1;
+            const by = e.ctrlKey ? data.length - activeRow - 1 : 1;
             selection.moveTo([activeRow + by, activeCol], e.shiftKey);
         }
     }
 
     function handleKeyUp(e: KeyboardEvent) {
-        console.log(e);
+        console.log(e, mode);
         if (mode.t === ModeEnum.Navigate) {
-            move(e);
+            if (['ArrowRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
+                move(e);
+            } else if (e.key === 'Escape') {
+                selection.clear();
+            } else if (e.key === 'Enter') {
+                startEditing(...selection.activeCell);
+            } else if (e.key === ' ' && e.shiftKey) {
+                selection.selectWholeRows();
+            } else if (e.key === ' ' && e.ctrlKey) {
+                selection.selectWholeColumns();
+            } else if (e.key === 'Tab') {
+                selection.clear();
+                const [activeRow, activeCol] = selection.activeCell;
+                const nextCol = e.shiftKey ? activeCol - 1 : activeRow + 1;
+                selection.moveTo([activeRow, nextCol]);
+            }
+
+        } else if (mode.t === ModeEnum.Edit) {
+            if (e.key === 'Escape') {
+                stopEditing(false);
+            } else if (e.key === 'Enter') {
+                stopEditing(true);
+                selection.clear();
+                const [activeRow, activeCol] = selection.activeCell;
+                const nextRow = e.shiftKey ? activeRow - 1 : activeRow + 1;
+                selection.moveTo([nextRow, activeCol]);
+            } else if (e.key === 'Tab') {
+                stopEditing(true);
+                selection.clear();
+                const [activeRow, activeCol] = selection.activeCell;
+                const nextCol = e.shiftKey ? activeCol - 1 : activeRow + 1;
+                selection.moveTo([activeRow, nextCol]);
+            }
+
         }
     }
 </script>
 
-<svelte:body on:keyup={handleKeyUp} />
+<svelte:body on:keyup={handleKeyUp} on:keydown={(e) => {e.key === 'Tab'? e.preventDefault(): null}}/>
 
 Headers: {JSON.stringify(headers)}<br>
 Data: {JSON.stringify(data)}<br>
@@ -174,8 +215,9 @@ Active cell: {JSON.stringify(selection.activeCell)}<br>
                             class:selected={selection.has([i, j])}
                             on:click={(e) => handleClick(e, i, j)}
                             on:keyup={(e) => handleKeyUp(e)}
+                            on:keydown={(e) => {e.key === 'Tab' ? e.preventDefault() : null}}
                     >
-                        <input type="text" value={cell.f}>
+                        <input type="text" bind:value={cell.f} autofocus>
                     </td>
                 {:else}
                     <td
@@ -183,6 +225,7 @@ Active cell: {JSON.stringify(selection.activeCell)}<br>
                             class:selected={selection.has([i, j])}
                             on:click={(e) => handleClick(e, i, j)}
                             on:keyup={(e) => handleKeyUp(e)}
+                            on:keydown={(e) => {e.key === 'Tab' ? e.preventDefault() : null}}
                     >
                         {cell.d}
                     </td>

@@ -38,14 +38,14 @@ export class Selection {
         this.activeCell = [row, col];
     }
 
-    expandColumns() {
+    selectWholeColumns() {
         this.ensureSelection();
         this.corners = this.corners as [[number, number], [number, number]];
         this.corners[0][0] = 0;
         this.corners[1][0] = Infinity;
     }
 
-    expandRows() {
+    selectWholeRows() {
         this.ensureSelection();
         this.corners = this.corners as [[number, number], [number, number]];
         this.corners[0][1] = 0;
