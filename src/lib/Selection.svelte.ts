@@ -24,7 +24,6 @@ export class Selection {
         console.log(`Moving to ${row}, ${col}, ${expandSelection}`);
         if (!expandSelection) {
             this.activeCell = [row, col];
-            this.corners = null;
             return
         }
 
@@ -57,13 +56,5 @@ export class Selection {
         if (!this.corners) return false;
         return (this.topLeft[0] <= row && row <= this.bottomRight[0]
             && this.topLeft[1] <= col && col <= this.bottomRight[1]);
-    }
-
-    get size(): number {
-        if (!this.corners) {
-            return 0;
-        } else {
-            return (this.bottomRight[0] - this.topLeft[0] + 1) * (this.bottomRight[1] - this.topLeft[1] + 1)
-        }
     }
 }

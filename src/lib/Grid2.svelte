@@ -49,8 +49,11 @@
         if (mode.t === ModeEnum.Navigate) {
             if (activeRow === row && activeCol === col) {
                 mode = {t: ModeEnum.Edit, cache: data[row][col].f};
+            } else if (e.shiftKey) {
+                selection.moveTo([row, col], true);
             } else {
-                selection.moveTo([row, col], e.shiftKey);
+                selection.clear();
+                selection.moveTo([row, col]);
             }
         } else if (mode.t === ModeEnum.Edit) {
             if (activeRow === row && activeCol === col) {
@@ -68,39 +71,38 @@
         }
     }
 
-    function handleDoubleClick(row: number, col: number) {
+    function handleDoubleClick(e: MouseEvent, row: number, col: number) {
         console.log(`double clicked [${row}, ${col}]`);
-        return;
         if (row === -1 || col === -1) {  // gutter click, do nothing for now
             return;
         }
 
         if (mode.t === ModeEnum.Navigate) {
             mode = {t: ModeEnum.Edit, cache: data[row][col].f};
-            selection = [[-1, -1], [-1, -1]];
-            activeCell = {row: row, col: col};
+            selection.clear();
+            selection.moveTo([row, col]);
         } else if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
             const [activeRow, activeCol] = selection.activeCell;
             data[activeRow][activeCol].f = mode.cache;
             mode = {t: ModeEnum.Edit, cache: data[row][col].f};
-            activeCell = {row: row, col: col};
-            selection = [[-1, -1], [-1, -1]];
+            selection.clear();
+            selection.moveTo([row, col]);
         }
     }
 
     let timeout: number | null = null;
 
-    function handleClick(e: Event, row: number, col: number) {
+    function handleClick(e: MouseEvent, row: number, col: number) {
         e.preventDefault();
         if (timeout) {
             clearTimeout(timeout);
             timeout = null;
-            handleDoubleClick(row, col);
+            handleDoubleClick(e, row, col);
         } else {
             timeout = setTimeout(() => {
                 timeout = null;
                 handleSingleClick(e, row, col);
-            }, 20);
+            }, 200);
             console.log(timeout);
         }
     }
