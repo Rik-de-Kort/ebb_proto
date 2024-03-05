@@ -15,6 +15,7 @@ Keyboard events: basic navigating
 - [x] Arrow keys to navigate. "Bump" on top and front.
 - [ ] Arrow keys to navigate. Create more rows/columns when "running off"
 - [x] Enter to start editing a cell
+- [x] F2 to start editing a cell
 - [x] Tab to jump to cell on right
 - [x] Shift+ Tab to jump to cell on left
 - [x] Shift to select a range. 
@@ -36,12 +37,12 @@ Keyboard events: editing
 - [x] Shift+enter to keep changes and start editing cell above
 - [x] Tab to keep changes and start editing cell to the right
 - [x] Shift+Tab to keep changes and start editing cell to the left
-- [ ] F2 to change to navigating-while-editing mode
+- [x] F2 to change to navigating-while-editing mode
 
 Keyboard events: navigating-while-editing
 - [ ] Default action: basic navigating (while inserting a reference to the selection at the edit cursor)
 - [ ] Fallback: editing
-- [ ] F2 to change to editing mode (clear selection)
+- [x] F2 to change to editing mode (clear selection)
 
 Mouse events: navigating
 - [x] Double-click to start editing

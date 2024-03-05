@@ -139,7 +139,7 @@
                 move(e);
             } else if (e.key === 'Escape') {
                 selection.clear();
-            } else if (e.key === 'Enter') {
+            } else if (e.key === 'Enter' || e.key === 'F2') {
                 startEditing(...selection.activeCell);
             } else if (e.key === ' ' && e.shiftKey) {
                 selection.selectWholeRows();
@@ -152,7 +152,7 @@
                 selection.moveTo([activeRow, nextCol]);
             }
 
-        } else if (mode.t === ModeEnum.Edit) {
+        } else if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
             if (e.key === 'Escape') {
                 stopEditing(false);
             } else if (e.key === 'Enter') {
@@ -167,8 +167,9 @@
                 const [activeRow, activeCol] = selection.activeCell;
                 const nextCol = e.shiftKey ? activeCol - 1 : activeRow + 1;
                 selection.moveTo([activeRow, nextCol]);
+            } else if (e.key === 'F2') {
+                mode.t = mode.t === ModeEnum.Edit ? ModeEnum.NavigateWhileEdit : ModeEnum.Edit;
             }
-
         }
     }
 </script>
