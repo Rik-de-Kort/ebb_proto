@@ -34,10 +34,10 @@
             if (!e.shiftKey) selection.clear();
             selection.moveTo([row, col], e.shiftKey);
             if (row === -1) {
-                selection.selectWholeColumns();
+                selection.selectWholeColumns(data.length);
             }
             if (col === -1) {
-                selection.selectWholeRows();
+                selection.selectWholeRows(data[0].length);
             }
             return;
         }
@@ -119,6 +119,9 @@
 
     function move(e: KeyboardEvent) {
         const [activeRow, activeCol] = selection.activeCell;
+        if (!e.shiftKey) {
+            selection.clear();
+        }
         if (e.key === 'ArrowRight') {
             const by = e.ctrlKey ? data[0].length - activeCol - 1 : 1;
             selection.moveTo([activeRow, activeCol + by], e.shiftKey);
@@ -139,9 +142,9 @@
             if (['ArrowRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
                 move(e);
             } else if (e.key === ' ' && e.shiftKey) {
-                selection.selectWholeRows();
+                selection.selectWholeRows(data.length);
             } else if (e.key === ' ' && e.ctrlKey) {
-                selection.selectWholeColumns();
+                selection.selectWholeColumns(data[0].length);
             } else if (e.key === 'Tab') {
                 selection.clear();
                 const [activeRow, activeCol] = selection.activeCell;
@@ -151,14 +154,20 @@
                 selection.clear();
             } else if (e.key === 'Enter' || e.key === 'F2') {
                 startEditing(...selection.activeCell);
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                for (const [row, col] of selection) {
+                    data[row][col].f = ''
+                }
+                selection.moveTo(selection.topLeft);
+                selection.clear();
             }
         } else if(mode.t === Modes.NavigateWhileEdit) {
             if (['ArrowRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
                 move(e);
             } else if (e.key === ' ' && e.shiftKey) {
-                selection.selectWholeRows();
+                selection.selectWholeRows(data.length);
             } else if (e.key === ' ' && e.ctrlKey) {
-                selection.selectWholeColumns();
+                selection.selectWholeColumns(data[0].length);
             } else if (e.key === 'Escape') {
                 stopEditing(false);
             } else if (e.key === 'Enter') {

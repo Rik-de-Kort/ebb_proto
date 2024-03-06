@@ -24,8 +24,8 @@ Keyboard events: basic navigating
 - [x] Ctrl+space to select entire column
 
 Keyboard events: manipulating cells while navigating
-- [ ] Delete/Backspace to clear a cell or range
-    - If range is entire rows/columns, delete columns/rows from sheet. Move selection to top and left (single cell) in that case
+- [x] Delete/Backspace to clear a cell or range
+- [ ] If range is entire rows/columns, delete columns/rows from sheet. Move selection to top and left (single cell) in that case
 - [ ] Ctrl+C, Ctrl+X, Ctrl+V in the usual way
 - [ ] Ctrl+Z to undo, Ctrl+Shift+Z to redo
     - How to implement?

@@ -38,23 +38,31 @@ export class Selection {
         this.activeCell = [row, col];
     }
 
-    selectWholeColumns() {
+    selectWholeColumns(nRows: number) {
         this.ensureSelection();
         this.corners = this.corners as [[number, number], [number, number]];
         this.corners[0][0] = 0;
-        this.corners[1][0] = Infinity;
+        this.corners[1][0] = nRows;
     }
 
-    selectWholeRows() {
+    selectWholeRows(nCols: number) {
         this.ensureSelection();
         this.corners = this.corners as [[number, number], [number, number]];
         this.corners[0][1] = 0;
-        this.corners[1][1] = Infinity;
+        this.corners[1][1] = nCols;
     }
 
     has([row, col]: [number, number]) {
         if (!this.corners) return false;
         return (this.topLeft[0] <= row && row <= this.bottomRight[0]
             && this.topLeft[1] <= col && col <= this.bottomRight[1]);
+    }
+
+    * [Symbol.iterator]() {
+        for (let row = this.topLeft[0];  row <= this.bottomRight[0]; row++) {
+            for (let col = this.topLeft[1];  col <= this.bottomRight[1]; col++) {
+                yield [row, col];
+            }
+        }
     }
 }
