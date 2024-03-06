@@ -8,8 +8,8 @@
     }
 
     type Mode = ({ t: ModeEnum.Navigate }
-        | { t: ModeEnum.Edit, cache: string | number }
-        | { t: ModeEnum.NavigateWhileEdit, cache: string | number });
+        | { t: ModeEnum.Edit, row: number, col: number, cache: string | number }
+        | { t: ModeEnum.NavigateWhileEdit, row: number, col: number, cache: string | number });
 
     let headers = $state(['first', 'second', 'third', 'fourth']);
     let data = $state(
@@ -45,7 +45,8 @@
         const [activeRow, activeCol] = selection.activeCell;
         if (mode.t === ModeEnum.Navigate) {
             if (activeRow === row && activeCol === col) {
-                mode = {t: ModeEnum.Edit, cache: data[row][col].f};
+                startEditing(row, col);
+                mode = {t: ModeEnum.Edit, row: activeRow, col: activeCol, cache: data[row][col].f};
             } else if (e.shiftKey) {
                 selection.moveTo([row, col], true);
             } else {
@@ -56,7 +57,7 @@
             if (activeRow === row && activeCol === col) {
                 null;
             } else {
-                mode = {t: ModeEnum.NavigateWhileEdit, cache: mode.cache};
+                mode = {t: ModeEnum.NavigateWhileEdit, row: mode.row, col: mode.col, cache: mode.cache};
             }
         } else if (mode.t === ModeEnum.NavigateWhileEdit) {
             if (activeRow === row && activeCol === col) {
@@ -69,16 +70,17 @@
     }
 
     function startEditing(row: number, col: number) {
-        mode = {t: ModeEnum.Edit, cache: data[row][col].f};
+        console.log(`Start editing ${row} ${col}`);
+        mode = {t: ModeEnum.Edit, row: row, col: col, cache: data[row][col].f};
+        console.log({mode});
         selection.clear();
+        console.log('moving...');
         selection.moveTo([row, col]);
     }
 
     function stopEditing(save = true) {
-        const [activeRow, activeCol] = selection.activeCell;
-        console.log(`Stop editing ${save} ${[activeRow, activeCol]}`)
         if ('cache' in mode && !save) {
-            // const [activeRow, activeCol] = selection.activeCell;
+            const [activeRow, activeCol] = selection.activeCell;
             data[activeRow][activeCol].f = mode.cache;
         }
         mode = {t: ModeEnum.Navigate};
@@ -133,40 +135,45 @@
     }
 
     function handleKeyUp(e: KeyboardEvent) {
+        // Todo: figure out the duplication logic here. Maybe a map (mode, key) -> action?
+        //  Currently some issues with fallthrough since `mode` gets updated and then the next if matches.
         console.log(e, mode);
-        if (mode.t === ModeEnum.Navigate) {
+        if (mode.t === ModeEnum.Navigate || mode.t === ModeEnum.NavigateWhileEdit) {
             if (['ArrowRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
                 move(e);
-            } else if (e.key === 'Escape') {
-                selection.clear();
-            } else if (e.key === 'Enter' || e.key === 'F2') {
-                startEditing(...selection.activeCell);
             } else if (e.key === ' ' && e.shiftKey) {
                 selection.selectWholeRows();
             } else if (e.key === ' ' && e.ctrlKey) {
                 selection.selectWholeColumns();
-            } else if (e.key === 'Tab') {
+            }
+        }
+
+        if (mode.t === ModeEnum.Navigate) {
+            if (e.key === 'Tab') {
                 selection.clear();
                 const [activeRow, activeCol] = selection.activeCell;
                 const nextCol = e.shiftKey ? activeCol - 1 : activeCol + 1;
                 selection.moveTo([activeRow, nextCol]);
+            } else if (e.key === 'Escape') {
+                selection.clear();
+            } else if (e.key === 'Enter' || e.key === 'F2') {
+                startEditing(...selection.activeCell);
             }
+        }  // We fall through the next one because NavigateWhileEdit can also take editing actions
 
-        } else if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
+        if (mode.t === ModeEnum.Edit || mode.t === ModeEnum.NavigateWhileEdit) {
             if (e.key === 'Escape') {
                 stopEditing(false);
             } else if (e.key === 'Enter') {
                 stopEditing(true);
                 selection.clear();
-                const [activeRow, activeCol] = selection.activeCell;
-                const nextRow = e.shiftKey ? activeRow - 1 : activeRow + 1;
-                selection.moveTo([nextRow, activeCol]);
+                const nextRow = e.shiftKey ? mode.row - 1 : mode.row + 1;
+                selection.moveTo([nextRow, mode.col]);
             } else if (e.key === 'Tab') {
                 stopEditing(true);
                 selection.clear();
-                const [activeRow, activeCol] = selection.activeCell;
-                const nextCol = e.shiftKey ? activeCol - 1 : activeRow + 1;
-                selection.moveTo([activeRow, nextCol]);
+                const nextCol = e.shiftKey ? mode.col - 1 : mode.col + 1;
+                selection.moveTo([mode.row, nextCol]);
             } else if (e.key === 'F2') {
                 mode.t = mode.t === ModeEnum.Edit ? ModeEnum.NavigateWhileEdit : ModeEnum.Edit;
             }
