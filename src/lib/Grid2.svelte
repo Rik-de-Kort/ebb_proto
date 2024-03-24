@@ -153,6 +153,34 @@
         }
     }
 
+    function clearSheet() {
+        headers = [''];
+        data = [[{d: '', f: ''}]];
+        selection.clear();
+        selection.moveTo([0, 0]);
+    }
+
+    function deleteCol(col: number) {
+        headers.splice(col, 1);
+        for (let row of data) {
+            row.splice(col, 1);
+        }
+        const [activeRow, activeCol] = selection.activeCell;
+        if (col === activeCol) {
+            selection.moveTo([activeRow, col - 1]);
+            selection.clear();
+        }
+    }
+
+    function deleteRow(row: number) {
+        data.splice(row, 1);
+        const [activeRow, activeCol] = selection.activeCell;
+        if (row === activeRow) {
+            selection.moveTo([row - 1, activeCol]);
+            selection.clear();
+        }
+    }
+
     function handleKeyUp(e: KeyboardEvent) {
         if (mode.t === Modes.Navigate) {
             if (['ArrowRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
@@ -171,13 +199,23 @@
             } else if (e.key === 'Enter' || e.key === 'F2') {
                 startEditing(...selection.activeCell);
             } else if (e.key === 'Backspace' || e.key === 'Delete') {
-                for (const [row, col] of selection) {
-                    data[row][col].f = ''
+                const wholeColumn = selection.topLeft[0] <= 0 && selection.bottomRight[0] >= data.length - 1
+                const wholeRow = selection.topLeft[1] <= 0 && selection.bottomRight[1] >= data[0].length - 1
+                if (wholeColumn && wholeRow) {
+                    clearSheet();
+                } else if (wholeColumn) {
+                    deleteCol(selection.activeCell[1]);
+                } else if (wholeRow) {
+                    deleteRow(selection.activeCell[0]);
+                } else {
+                    for (const [row, col] of selection) {
+                        data[row][col].f = ''
+                    }
+                    selection.moveTo(selection.topLeft);
+                    selection.clear();
                 }
-                selection.moveTo(selection.topLeft);
-                selection.clear();
             }
-        } else if(mode.t === Modes.NavigateWhileEdit) {
+        } else if (mode.t === Modes.NavigateWhileEdit) {
             if (['ArrowRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
                 move(e);
             } else if (e.key === ' ' && e.shiftKey) {
