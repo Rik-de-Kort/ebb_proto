@@ -13,7 +13,7 @@ State involved
 
 Keyboard events: basic navigating
 - [x] Arrow keys to navigate. "Bump" on top and front.
-- [ ] Arrow keys to navigate. Create more rows/columns when "running off"
+- [x] Arrow keys to navigate. Create more rows/columns when "running off"
 - [x] Enter to start editing a cell
 - [x] F2 to start editing a cell
 - [x] Tab to jump to cell on right

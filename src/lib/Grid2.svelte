@@ -11,8 +11,10 @@
         | { t: Modes.Edit, row: number, col: number, cache: string | number }
         | { t: Modes.NavigateWhileEdit, row: number, col: number, cache: string | number });
 
+    type Cell = { d: number | string | boolean, f: string | number | boolean };
+
     let headers = $state(['first', 'second', 'third', 'fourth']);
-    let data = $state(
+    let data: Cell[][] = $state(
         [
             [{d: 1, f: 1}, {d: 2, f: 2}, {d: 3, f: 3}, {d: 3, f: 'first+second'}],
             [{d: 4, f: 4}, {d: 7, f: 7}, {d: 8, f: 8}, {d: 11, f: 'first+second'}],
@@ -117,6 +119,18 @@
         }
     }
 
+    function addCol() {
+        headers.push('');
+        for (let r of data) {
+            r.push({d: '', f: ''});
+        }
+    }
+
+    function addRow() {
+        const toAdd = data[0].map(_c => ({d: '', f: ''}));
+        data.push(toAdd);
+    }
+
     function move(e: KeyboardEvent) {
         const [activeRow, activeCol] = selection.activeCell;
         if (!e.shiftKey) {
@@ -124,6 +138,7 @@
         }
         if (e.key === 'ArrowRight') {
             const by = e.ctrlKey ? data[0].length - activeCol - 1 : 1;
+            if (activeCol + by >= data[0].length) addCol()
             selection.moveTo([activeRow, activeCol + by], e.shiftKey);
         } else if (e.key === 'ArrowLeft') {
             const by = e.ctrlKey ? activeCol : 1;
@@ -133,6 +148,7 @@
             selection.moveTo([activeRow - by, activeCol], e.shiftKey);
         } else if (e.key === 'ArrowDown') {
             const by = e.ctrlKey ? data.length - activeRow - 1 : 1;
+            if (activeRow + by >= data.length) addRow()
             selection.moveTo([activeRow + by, activeCol], e.shiftKey);
         }
     }
